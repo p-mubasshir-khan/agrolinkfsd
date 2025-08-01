@@ -3,11 +3,15 @@ const Product = require('./models/Product');
 const User = require('./models/User');
 require('dotenv').config();
 
-const createSampleProducts = async () => {
+const clearAndCreateProducts = async () => {
   try {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/agrolink');
     console.log('Connected to MongoDB');
+
+    // Clear all existing products
+    await Product.deleteMany({});
+    console.log('Cleared all existing products');
 
     // Find or create a farmer user
     let farmer = await User.findOne({ role: 'farmer' });
@@ -24,13 +28,11 @@ const createSampleProducts = async () => {
       });
       await farmer.save();
       console.log('Created sample farmer');
-    }
-
-    // Check if products already exist
-    const existingProducts = await Product.countDocuments();
-    if (existingProducts > 0) {
-      console.log('Sample products already exist!');
-      process.exit(0);
+    } else {
+      // Update existing farmer's city to Guntur
+      farmer.city = 'Guntur';
+      await farmer.save();
+      console.log('Updated farmer city to Guntur');
     }
 
     // Create sample products
@@ -101,6 +103,7 @@ const createSampleProducts = async () => {
     await Product.insertMany(sampleProducts);
     console.log('Sample products created successfully!');
     console.log('Products added:', sampleProducts.length);
+    console.log('All products are from Guntur city');
 
   } catch (error) {
     console.error('Error creating sample products:', error);
@@ -110,4 +113,4 @@ const createSampleProducts = async () => {
   }
 };
 
-createSampleProducts(); 
+clearAndCreateProducts(); 

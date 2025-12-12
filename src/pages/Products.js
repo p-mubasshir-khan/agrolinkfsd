@@ -1,211 +1,234 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Search, Filter, ShoppingCart, Star } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+
+const API_URL = 'http://localhost:3001';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
-  const [cities, setCities] = useState([]);
-
-  const categories = [
-    { value: '', label: 'All Categories' },
-    { value: 'vegetables', label: 'Vegetables' },
-    { value: 'fruits', label: 'Fruits' },
-    { value: 'grains', label: 'Grains' },
-    { value: 'dairy', label: 'Dairy' },
-    { value: 'poultry', label: 'Poultry' },
-    { value: 'other', label: 'Other' }
-  ];
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const { user, isCustomer } = useAuth();
+  const [cartMap, setCartMap] = useState({}); // Tracks quantity per product
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
+  // Load cart quantities from localStorage for logged-in user
+  useEffect(() => {
+    if (!user) return;
+
+    const cartKey = `cart_${user.id}`;
+    const storedCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+
+    const map = {};
+    storedCart.forEach(item => {
+      map[item.id] = item.quantity;
+    });
+
+    setCartMap(map);
+  }, [user]);
+
   const fetchProducts = async () => {
     try {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (selectedCategory) params.append('category', selectedCategory);
-      if (selectedCity) params.append('city', selectedCity);
-
-      const response = await axios.get(`http://localhost:5000/api/products?${params}`);
-      const productsArray = response.data.products || response.data;
-      setProducts(Array.isArray(productsArray) ? productsArray : []);
-      
-      // Extract unique cities for filter
-      const uniqueCities = [...new Set((Array.isArray(productsArray) ? productsArray : []).map(product => product.city))];
-      setCities(uniqueCities);
+      const response = await axios.get(`${API_URL}/products`);
+      setProducts(response.data);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      setProducts([]);
+      toast.error('Error fetching products');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, [searchTerm, selectedCategory, selectedCity]);
-
   const handleAddToCart = (product) => {
-    // This would integrate with a cart context
-    console.log('Adding to cart:', product);
-    // For now, just show an alert
-    alert(`${product.name} added to cart!`);
+    if (!user) return toast.error('Please login to add items to cart');
+
+    const cartKey = `cart_${user.id}`;
+    const existingCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+
+    const index = existingCart.findIndex(item => item.id === product.id);
+
+    if (index > -1) {
+      existingCart[index].quantity += 1;
+    } else {
+      existingCart.push({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        unit: product.unit,
+        farmerId: product.farmerId,
+        farmerName: product.farmer?.name,
+        quantity: 1
+      });
+    }
+
+    localStorage.setItem(cartKey, JSON.stringify(existingCart));
+
+    setCartMap(prev => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }));
+
+    toast.success("Added to cart");
+    window.dispatchEvent(new Event("storage"));
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  const updateInlineQty = (product, increment) => {
+    if (!user) return toast.error('Please login');
+
+    const cartKey = `cart_${user.id}`;
+    let cart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+
+    const index = cart.findIndex(item => item.id === product.id);
+    if (index === -1) return;
+
+    cart[index].quantity += increment;
+
+    // Remove if quantity reaches zero
+    if (cart[index].quantity <= 0) {
+      cart.splice(index, 1);
+      setCartMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[product.id];
+        return newMap;
+      });
+    } else {
+      setCartMap(prev => ({
+        ...prev,
+        [product.id]: cart[index].quantity
+      }));
+    }
+
+    localStorage.setItem(cartKey, JSON.stringify(cart));
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const categories = ['All', ...new Set(products.map(p => p.category))];
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === 'All' || product.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Fresh Produce</h1>
-        <p className="text-gray-600">Discover fresh, quality products from local farmers</p>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Marketplace</h1>
+        <p className="text-neutral-500">Buy directly from farmers</p>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="grid md:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
-            />
-          </div>
+      <div className="mb-8 flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border">
 
-          {/* Category Filter */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="input-field"
-          >
-            {categories.map(category => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </select>
+        {/* Search */}
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-3 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl border focus:ring-primary-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
-          {/* City Filter */}
-          <select
-            value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-            className="input-field"
-          >
-            <option value="">All Cities</option>
-            {cities.map(city => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-
-          {/* Clear Filters */}
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('');
-              setSelectedCity('');
-            }}
-            className="btn-secondary"
-          >
-            Clear Filters
-          </button>
+        {/* Category Filter */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {categories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all ${selectedCategory === category
+                  ? 'bg-primary-600 text-white shadow'
+                  : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
+                }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Products Grid */}
-      {products.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <Search className="h-16 w-16 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-          <p className="text-gray-600">Try adjusting your search or filters</p>
+      {/* Product Grid */}
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="animate-spin h-10 w-10 border-2 border-primary-600 border-t-transparent rounded-full"></div>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              {/* Product Image */}
-              <div className="aspect-w-1 aspect-h-1 w-full">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredProducts.map(product => (
+            <Card key={product.id} className="group overflow-hidden flex flex-col">
+
+              {/* Image */}
+              <div className="relative h-48 overflow-hidden">
                 <img
-                  src={`http://localhost:5000/${product.image}`}
+                  src={product.image || 'https://via.placeholder.com/300'}
                   alt={product.name}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x200?text=Product+Image';
-                  }}
+                  className="w-full h-full object-cover transition group-hover:scale-110"
                 />
+                <Badge className="absolute top-3 right-3 bg-white">{product.category}</Badge>
               </div>
 
-              {/* Product Info */}
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 truncate">
-                    {product.name}
-                  </h3>
-                  <span className="text-sm text-gray-500">{product.city}</span>
+              {/* Info */}
+              <div className="p-4 flex flex-col flex-grow">
+                <h3 className="font-semibold text-lg truncate">{product.name}</h3>
+                <p className="text-sm text-neutral-500">{product.farmer?.name || "Local Farmer"}</p>
+
+                <div className="mt-2 font-bold text-primary-700">
+                  ₹{product.price} / {product.unit}
                 </div>
-                
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+
+                <p className="text-sm text-neutral-600 my-3 line-clamp-2">
                   {product.description}
                 </p>
 
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="text-sm text-gray-600">4.5</span>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {product.quantity} {product.unit}
-                  </span>
-                </div>
+                {/* Add / Inline Controls */}
+                {isCustomer && (
+                  cartMap[product.id] > 0 ? (
+                    <div className="flex justify-between items-center border rounded-xl p-2 bg-neutral-50">
+                      <button
+                        onClick={() => updateInlineQty(product, -1)}
+                        className="p-2 bg-neutral-200 rounded-lg hover:bg-neutral-300"
+                      >
+                        <Minus size={16} />
+                      </button>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-bold text-primary-600">
-                    ₹{product.price}/{product.unit}
-                  </span>
-                  <div className="flex space-x-2">
-                    <Link
-                      to={`/products/${product._id}`}
-                      className="btn-secondary text-sm px-3 py-1"
-                    >
-                      View
-                    </Link>
-                    <button
+                      <span className="font-semibold">{cartMap[product.id]}</span>
+
+                      <button
+                        onClick={() => updateInlineQty(product, 1)}
+                        className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      className="w-full mt-auto"
                       onClick={() => handleAddToCart(product)}
-                      className="btn-primary text-sm px-3 py-1 flex items-center"
                     >
-                      <ShoppingCart className="h-4 w-4 mr-1" />
-                      Add
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-2 text-xs text-gray-500">
-                  By {product.farmer?.name || 'Unknown Farmer'}
-                </div>
+                      <ShoppingCart size={16} className="mr-2" />
+                      Add to Cart
+                    </Button>
+                  )
+                )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -213,4 +236,4 @@ const Products = () => {
   );
 };
 
-export default Products; 
+export default Products;

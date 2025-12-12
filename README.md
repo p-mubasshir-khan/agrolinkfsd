@@ -10,40 +10,42 @@
 - **Browse Products**: View fresh produce from local farmers
 - **Advanced Search & Filtering**: Search by name, filter by category and city
 - **Product Details**: Detailed product information with farmer details
+- **Shopping Cart**: Add products to cart with conditional delivery fee (Free > ₹500)
+- **Order Management**: Track and manage orders
 - **User Authentication**: Secure registration and login system
 - **Responsive Design**: Mobile-friendly interface
 
 #### **For Farmers:**
-- **Product Management**: Add, edit, and manage product listings
+- **Product Management**: Add, edit, and manage product listings (Full CRUD)
+- **Dashboard**: View statistics and recent orders
+- **Order Management**: Update order status and cancel pending orders
 - **Profile Management**: Update farm information and personal details
 - **Approval System**: Admin approval for farmer accounts
 
 #### **For Administrators:**
-- **User Management**: Approve/reject farmer registrations
+- **User Management**: View and manage all users
+- **Product Management**: View and manage all products
+- **Order Management**: View and manage all orders
+- **Farmer Approval**: Approve/reject farmer registrations
 - **Platform Oversight**: Monitor all activities and users
-- **Content Management**: Manage products and categories
 
 ## 🛠️ Technology Stack
 
 ### **Frontend (React)**
 - **React 18** - Modern UI library
-- **React Router** - Client-side routing
+- **React Router DOM** - Client-side routing
 - **Axios** - HTTP client for API calls
 - **Tailwind CSS** - Utility-first CSS framework
-- **Lucide React** - Beautiful icons
+- **React Icons** - Icon library
+- **React Toastify** - Toast notifications
+- **jsPDF** - PDF export functionality
 - **Context API** - State management
 
-### **Backend (Node.js)**
-- **Express.js** - Web application framework
-- **MongoDB** - NoSQL database
-- **Mongoose** - MongoDB object modeling
-- **JWT** - JSON Web Tokens for authentication
-- **bcryptjs** - Password hashing
-- **Multer** - File upload handling
-- **Express Validator** - Input validation
+### **Backend (JSON-Server)**
+- **JSON-Server** - REST API with JSON file storage
+- **db.json** - JSON database file
 
 ### **Development Tools**
-- **Nodemon** - Auto-restart server during development
 - **Concurrently** - Run frontend and backend simultaneously
 
 ## 📁 Project Structure
@@ -52,45 +54,35 @@
 agrolink/
 ├── src/                          # React Frontend
 │   ├── components/               # Reusable UI components
-│   │   ├── Header.js
-│   │   ├── Footer.js
-│   │   ├── ProductCard.js
-│   │   └── LoadingSpinner.js
+│   │   ├── Navbar.js
+│   │   └── ProtectedRoute.js
 │   ├── pages/                    # Page components
 │   │   ├── Home.js
 │   │   ├── Products.js
 │   │   ├── ProductDetail.js
 │   │   ├── Login.js
 │   │   ├── Register.js
-│   │   ├── Profile.js
-│   │   └── Admin.js
+│   │   ├── Dashboard.js
+│   │   ├── Cart.js
+│   │   ├── Orders.js
+│   │   ├── AddProduct.js
+│   │   ├── EditProduct.js
+│   │   ├── AdminDashboard.js
+│   │   ├── AdminUsers.js
+│   │   ├── AdminProducts.js
+│   │   ├── AdminOrders.js
+│   │   └── AdminFarmers.js
 │   ├── context/                  # React Context
 │   │   └── AuthContext.js
-│   ├── utils/                    # Utility functions
-│   │   └── api.js
 │   ├── App.js                    # Main App component
 │   ├── index.js                  # Entry point
 │   └── index.css                 # Global styles
-├── backend/                      # Node.js Backend
-│   ├── models/                   # Database models
-│   │   ├── User.js
-│   │   └── Product.js
-│   ├── routes/                   # API routes
-│   │   ├── auth.js
-│   │   ├── products.js
-│   │   └── users.js
-│   ├── middleware/               # Custom middleware
-│   │   ├── auth.js
-│   │   └── upload.js
-│   ├── uploads/                  # File uploads directory
-│   ├── server.js                 # Main server file
-│   ├── createAdmin.js            # Admin creation script
-│   └── createSampleProducts.js   # Sample data script
 ├── public/                       # Static files
 │   ├── index.html
 │   ├── favicon.ico
 │   └── manifest.json
-├── package.json                  # Root package.json
+├── db.json                       # JSON-Server database
+├── package.json                  # Dependencies and scripts
 ├── tailwind.config.js           # Tailwind configuration
 ├── postcss.config.js            # PostCSS configuration
 └── README.md                    # This file
@@ -100,54 +92,35 @@ agrolink/
 
 ### **Prerequisites**
 - Node.js (v14 or higher)
-- MongoDB (local or cloud)
-- Git
+- npm or yarn
 
 ### **Step 1: Clone the Repository**
 ```bash
 git clone <repository-url>
-cd agrolink
+cd "Full stack"
 ```
 
 ### **Step 2: Install Dependencies**
 ```bash
-# Install all dependencies (frontend + backend)
-npm run install-all
+npm install
 ```
 
-### **Step 3: Environment Setup**
-Create `.env` file in the backend directory:
-```env
-MONGODB_URI=mongodb://localhost:27017/agrolink
-JWT_SECRET=your_jwt_secret_key_here
-PORT=5000
-```
-
-### **Step 4: Database Setup**
+### **Step 3: Start the Application**
 ```bash
-# Start MongoDB (if using local)
-mongod
-
-# Create admin user
-cd backend
-node createAdmin.js
-
-# Create sample products
-node createSampleProducts.js
-```
-
-### **Step 5: Start the Application**
-```bash
-# Development mode (both frontend and backend)
+# Development mode (both frontend and JSON-Server)
 npm run dev
 
 # Or run separately:
-# Backend only
-npm run server:dev
+# JSON-Server only (runs on port 3001)
+npm run server
 
-# Frontend only
+# Frontend only (runs on port 3000)
 npm start
 ```
+
+The application will be available at:
+- **Frontend**: http://localhost:3000
+- **JSON-Server API**: http://localhost:3001
 
 ## 📱 Available Scripts
 
@@ -155,29 +128,44 @@ npm start
 |--------|-------------|
 | `npm start` | Start React development server |
 | `npm run build` | Build React app for production |
-| `npm run server` | Start backend server |
-| `npm run server:dev` | Start backend with nodemon |
-| `npm run dev` | Run both frontend and backend |
-| `npm run install-all` | Install all dependencies |
+| `npm run server` | Start JSON-Server on port 3001 |
+| `npm run dev` | Run both frontend and JSON-Server concurrently |
+| `npm test` | Run tests |
 
 ## 🔐 Authentication System
 
 ### **User Roles**
 1. **Customer** - Can browse and purchase products
-2. **Farmer** - Can list and manage products
+2. **Farmer** - Can list and manage products (requires admin approval)
 3. **Admin** - Can manage users and platform
 
-### **Registration Process**
-- Customers: Auto-approved
-- Farmers: Require admin approval
-- Admins: Auto-approved
+### **Default Accounts**
+- **Admin**: 
+  - Email: admin@agrolink.com
+  - Password: admin123
+- **Farmer**: 
+  - Email: farmer@test.com
+  - Password: farmer123
+- **Customer**: 
+  - Email: customer@test.com
+  - Password: customer123
 
-### **Default Admin Account**
-- **Email**: admin@agrolink.com
-- **Password**: admin123456
-- **Role**: admin
+## 🛍️ Product Management (Full CRUD)
 
-## 🛍️ Product Management
+### **Create**
+- Farmers can add new products with details (name, description, price, quantity, category, city, image)
+
+### **Read**
+- View all products with filtering and search
+- View individual product details
+- View farmer's own products (dashboard)
+
+### **Update**
+- Farmers can edit their own products
+- Update product information, price, quantity, etc.
+
+### **Delete**
+- Products can be removed (functionality available in codebase)
 
 ### **Product Categories**
 - Vegetables
@@ -187,192 +175,189 @@ npm start
 - Poultry
 - Other
 
-### **Product Fields**
-- Name, Description, Price
-- Quantity, Unit (kg, piece, dozen)
-- Category, City
-- Farmer information
-- Product images
+## 🌐 API Endpoints (JSON-Server)
 
-## 🌐 API Endpoints
-
-### **Authentication**
+### **Users**
 ```
-POST /api/auth/register    # User registration
-POST /api/auth/login       # User login
-GET  /api/auth/profile     # Get user profile
-PUT  /api/auth/profile     # Update user profile
+GET    /users          # Get all users
+GET    /users/:id      # Get single user
+POST   /users          # Create new user
+PUT    /users/:id      # Update user
+DELETE /users/:id      # Delete user
+GET    /users?role=farmer&isApproved=false  # Filter users
 ```
 
 ### **Products**
 ```
-GET    /api/products       # Get all products (with filters)
-GET    /api/products/:id   # Get single product
-POST   /api/products       # Create new product (farmer only)
-PUT    /api/products/:id   # Update product (owner only)
-DELETE /api/products/:id   # Delete product (owner only)
+GET    /products       # Get all products
+GET    /products/:id   # Get single product
+POST   /products       # Create new product
+PUT    /products/:id   # Update product
+DELETE /products/:id   # Delete product
+GET    /products?farmerId=2  # Filter by farmer
 ```
 
-### **Users**
+### **Orders**
 ```
-GET    /api/users          # Get all users (admin only)
-PUT    /api/users/:id      # Update user (admin only)
-DELETE /api/users/:id      # Delete user (admin only)
+GET    /orders         # Get all orders
+GET    /orders/:id     # Get single order
+POST   /orders         # Create new order
+PUT    /orders/:id     # Update order
+DELETE /orders/:id     # Delete order
+GET    /orders?customerId=3  # Filter by customer
+GET    /orders?farmerId=2    # Filter by farmer
 ```
 
 ## 🎨 UI/UX Features
 
 ### **Design System**
-- **Color Scheme**: Green-based primary colors
+- **Color Scheme**: Royal Blue-based primary colors (Premium & Modern)
 - **Typography**: Clean, readable fonts
-- **Icons**: Lucide React icons
-- **Responsive**: Mobile-first design
+- **Icons**: React Icons and Lucide React
+- **Responsive**: Mobile-first design with Tailwind CSS
+- **Notifications**: React Toastify for user feedback
 
 ### **Components**
-- **Header**: Navigation and user menu
+- **Navbar**: Navigation and user menu
 - **Product Cards**: Product display with actions
 - **Forms**: Login, registration, product forms
 - **Loading States**: Spinners and skeletons
 - **Error Handling**: User-friendly error messages
+- **Protected Routes**: Role-based access control
 
-## 🔧 Configuration Files
-
-### **Tailwind CSS Configuration**
-```javascript
-// tailwind.config.js
-module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          50: '#f0fdf4',
-          // ... green color palette
-        }
-      }
-    },
-  },
-  plugins: [],
-}
-```
-
-### **PostCSS Configuration**
-```javascript
-// postcss.config.js
-module.exports = {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-```
-
-## 🗄️ Database Schema
+## 🗄️ Database Schema (db.json)
 
 ### **User Model**
-```javascript
+```json
 {
-  name: String,
-  email: String (unique),
-  password: String (hashed),
-  role: String (customer/farmer/admin),
-  city: String,
-  isApproved: Boolean,
-  farmDescription: String (farmer only)
+  "id": 1,
+  "name": "String",
+  "email": "String",
+  "password": "String",
+  "role": "customer|farmer|admin",
+  "phone": "String",
+  "address": "String",
+  "city": "String",
+  "isApproved": true|false,
+  "farmDescription": "String (farmer only)"
 }
 ```
 
 ### **Product Model**
-```javascript
+```json
 {
-  name: String,
-  description: String,
-  price: Number,
-  quantity: Number,
-  unit: String (kg/piece/dozen),
-  category: String,
-  image: String,
-  city: String,
-  farmer: ObjectId (ref: User),
-  isAvailable: Boolean
+  "id": 1,
+  "name": "String",
+  "description": "String",
+  "price": Number,
+  "quantity": Number,
+  "unit": "kg|dozen|piece|bundle|quintal|litre",
+  "category": "vegetables|fruits|grains|dairy|poultry|other",
+  "city": "String",
+  "image": "String (URL)",
+  "farmerId": Number,
+  "farmer": {
+    "id": Number,
+    "name": "String"
+  },
+  "createdAt": "ISO Date String"
 }
 ```
 
-## 🚨 Error Handling
-
-### **Frontend Error Handling**
-- API call failures
-- Network connectivity issues
-- Form validation errors
-- Authentication errors
-
-### **Backend Error Handling**
-- Database connection errors
-- Validation errors
-- Authentication middleware
-- File upload errors
+### **Order Model**
+```json
+{
+  "id": 1,
+  "customerId": Number,
+  "customer": { "id": Number, "name": "String" },
+  "farmerId": Number,
+  "farmer": { "id": Number, "name": "String" },
+  "products": [
+    {
+      "productId": Number,
+      "product": { "id": Number, "name": "String", "price": Number, "unit": "String" },
+      "quantity": Number,
+      "price": Number
+    }
+  ],
+  "totalAmount": Number,
+  "status": "pending|confirmed|shipped|delivered|cancelled",
+  "paymentStatus": "pending|paid",
+  "deliveryAddress": {
+    "street": "String",
+    "city": "String",
+    "state": "String",
+    "pincode": "String"
+  },
+  "orderDate": "ISO Date String"
+}
+```
 
 ## 🔒 Security Features
 
 ### **Authentication & Authorization**
-- JWT-based authentication
+- Simple token-based authentication (localStorage)
 - Role-based access control
-- Password hashing with bcrypt
-- Protected routes
+- Protected routes for authenticated users
+- Admin-only routes for administrative functions
 
 ### **Input Validation**
-- Express-validator for API validation
 - Frontend form validation
-- File upload restrictions
+- Required field checks
+- Email format validation
+- Password strength requirements
 
 ## 📊 Sample Data
 
-### **Sample Products**
-- Fresh Milk (Dairy)
-- Organic Tomatoes (Vegetables)
-- Sweet Corn (Vegetables)
-- Fresh Eggs (Poultry)
-- Basmati Rice (Grains)
+The `db.json` file includes sample data:
+- 3 sample users (admin, farmer, customer)
+- 3 sample products
+- 1 sample order
 
-### **Sample Users**
-- Admin: admin@agrolink.com
-- Farmer: farmer@agrolink.com
-- Customer: customer@agrolink.com
+You can modify `db.json` directly or through the API to add more data.
 
 ## 🧪 Testing
 
 ### **Manual Testing Checklist**
-- [ ] User registration and login
-- [ ] Product browsing and filtering
-- [ ] Product detail viewing
-- [ ] Admin user management
-- [ ] Farmer product management
-- [ ] Responsive design on mobile
+- [x] User registration and login
+- [x] Product browsing and filtering
+- [x] Product detail viewing
+- [x] Add product to cart
+- [x] Place order
+- [x] Admin user management
+- [x] Farmer product management (CRUD)
+- [x] Order status updates
+- [x] Farmer approval system
+- [x] Responsive design on mobile
 
 ## 🚀 Deployment
 
 ### **Frontend Deployment**
 ```bash
 npm run build
-# Deploy build folder to hosting service
+# Deploy build folder to hosting service (Netlify, Vercel, etc.)
 ```
 
-### **Backend Deployment**
-```bash
-# Set production environment variables
-# Deploy to cloud platform (Heroku, AWS, etc.)
-```
+### **JSON-Server Deployment**
+For production, consider migrating to a proper backend (Node.js/Express, etc.) as JSON-Server is intended for development/prototyping.
 
-## 📈 Future Enhancements
+## 📈 Features Implemented
 
-### **Planned Features**
-- Shopping cart functionality
-- Payment gateway integration
-- Real-time chat between farmers and customers
-- Order tracking system
-- Review and rating system
-- Push notifications
-- Advanced analytics dashboard
+### **Full CRUD Operations**
+- ✅ Create: Add new products, users, orders
+- ✅ Read: View products, users, orders with filtering
+- ✅ Update: Edit products, update order status, approve farmers
+- ✅ Delete: Remove products, users, orders (functionality available)
+
+### **Additional Features**
+- ✅ Shopping cart functionality
+- ✅ Order management system
+- ✅ Admin dashboard with statistics
+- ✅ Farmer approval system
+- ✅ Product search and filtering
+- ✅ Responsive design
+- ✅ Toast notifications
+- ✅ Protected routes
 
 ## 🤝 Contributing
 
@@ -390,15 +375,13 @@ This project is licensed under the MIT License.
 
 **Agrolink Development Team**
 - Frontend Development
-- Backend Development
 - UI/UX Design
-- Database Design
+- Full Stack Implementation
 
 ## 📞 Support
 
 For support and questions:
-- Email: support@agrolink.com
-- GitHub Issues: [Repository Issues]
+- Email: khan.srmap@gmail.com
 
 ---
 

@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  ShoppingCart, 
-  Star, 
-  MapPin, 
-  User, 
-  Package,
-  ArrowLeft
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+import { ArrowLeft, ShoppingCart, Truck, Shield, User, Star } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+
+const API_URL = 'http://localhost:3001';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const { isCustomer } = useAuth();
+  const navigate = useNavigate();
+  const { user, isCustomer } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -25,232 +24,157 @@ const ProductDetail = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+      const response = await axios.get(`${API_URL}/products/${id}`);
       setProduct(response.data);
     } catch (error) {
-      console.error('Error fetching product:', error);
-      toast.error('Failed to load product details');
+      toast.error('Error fetching product details');
+      navigate('/products');
     } finally {
       setLoading(false);
     }
   };
 
-  const addToCart = () => {
-    if (!isCustomer) {
-      toast.error('Please login as a customer to add items to cart');
+  const handleAddToCart = () => {
+    if (!user) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
       return;
     }
 
-    const cartItem = {
-      product: product,
-      quantity: quantity
-    };
+    try {
+      const cartKey = `cart_${user.id}`;
+      const existingCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
 
-    // Get existing cart from localStorage
-    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    
-    // Check if product already exists in cart
-    const existingItemIndex = existingCart.findIndex(item => item.product._id === product._id);
-    
-    if (existingItemIndex >= 0) {
-      // Update quantity if product already exists
-      existingCart[existingItemIndex].quantity += quantity;
-    } else {
-      // Add new item to cart
-      existingCart.push(cartItem);
+      const existingItemIndex = existingCart.findIndex(item => item.id === product.id);
+
+      if (existingItemIndex > -1) {
+        existingCart[existingItemIndex].quantity += quantity;
+      } else {
+        existingCart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          unit: product.unit,
+          farmerId: product.farmerId,
+          farmerName: product.farmer?.name,
+          quantity: quantity
+        });
+      }
+
+      localStorage.setItem(cartKey, JSON.stringify(existingCart));
+      toast.success('Added to cart');
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      toast.error('Error adding to cart');
     }
-
-    // Save updated cart to localStorage
-    localStorage.setItem('cart', JSON.stringify(existingCart));
-    
-    toast.success(`${product.name} added to cart!`);
-  };
-
-  const buyNow = () => {
-    if (!isCustomer) {
-      toast.error('Please login as a customer to place orders');
-      return;
-    }
-
-    // Add to cart and redirect to cart page
-    addToCart();
-    window.location.href = '/cart';
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
-  if (!product) {
-    return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Product not found</h3>
-        <p className="text-gray-600 mb-6">The product you're looking for doesn't exist</p>
-        <Link to="/products" className="btn-primary">
-          Browse Products
-        </Link>
-      </div>
-    );
-  }
+  if (!product) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Link to="/products" className="inline-flex items-center text-primary-600 hover:text-primary-700">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Products
-      </Link>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Button
+        variant="ghost"
+        className="mb-6 pl-0 hover:bg-transparent"
+        onClick={() => navigate('/products')}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Marketplace
+      </Button>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
         {/* Product Image */}
-        <div>
-          <img
-            src={`http://localhost:5000/${product.image}`}
-            alt={product.name}
-            className="w-full h-96 object-cover rounded-lg shadow-md"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/600x400?text=Product+Image';
-            }}
-          />
+        <div className="space-y-4">
+          <div className="aspect-w-4 aspect-h-3 rounded-3xl overflow-hidden bg-neutral-100 shadow-soft">
+            <img
+              src={product.image || 'https://via.placeholder.com/600x400?text=No+Image'}
+              alt={product.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://via.placeholder.com/600x400?text=No+Image';
+              }}
+            />
+          </div>
         </div>
 
         {/* Product Info */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-            <p className="text-gray-600 text-lg">{product.description}</p>
-          </div>
-
-          {/* Price and Rating */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <span className="text-3xl font-bold text-primary-600">
-                ₹{product.price}/{product.unit}
-              </span>
-              <div className="flex items-center space-x-1">
-                <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                <span className="text-gray-600">4.5</span>
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="primary">{product.category}</Badge>
+              <Badge variant="success">In Stock</Badge>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Available Quantity</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {product.quantity} {product.unit}
-              </p>
+            <h1 className="text-4xl font-bold text-neutral-900 mb-2">{product.name}</h1>
+            <div className="flex items-center gap-2 text-neutral-600">
+              <User className="h-4 w-4" />
+              <span>Sold by <span className="font-medium text-neutral-900">{product.farmer?.name || 'Local Farmer'}</span></span>
             </div>
           </div>
 
-          {/* Farmer Info */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                <User className="h-5 w-5 text-primary-600" />
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-bold text-primary-700">₹{product.price}</span>
+            <span className="text-lg text-neutral-500 mb-1">/ {product.unit}</span>
+          </div>
+
+          <p className="text-lg text-neutral-600 leading-relaxed">
+            {product.description || 'Fresh, locally sourced produce grown with care and dedication. Perfect for your daily cooking needs.'}
+          </p>
+
+          <div className="border-t border-b border-neutral-200 py-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center border border-neutral-300 rounded-xl">
+                <button
+                  className="px-4 py-2 hover:bg-neutral-50 rounded-l-xl transition-colors"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                >
+                  -
+                </button>
+                <span className="w-12 text-center font-medium">{quantity}</span>
+                <button
+                  className="px-4 py-2 hover:bg-neutral-50 rounded-r-xl transition-colors"
+                  onClick={() => setQuantity(quantity + 1)}
+                >
+                  +
+                </button>
               </div>
+              {isCustomer && (
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  Add to Cart
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 p-4 bg-neutral-50 rounded-xl">
+              <Truck className="h-6 w-6 text-primary-600 mt-1" />
               <div>
-                <p className="font-medium text-gray-900">
-                  {product.farmer?.name || 'Unknown Farmer'}
-                </p>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{product.city}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Package className="h-4 w-4" />
-                    <span>{product.category}</span>
-                  </div>
-                </div>
+                <h4 className="font-semibold text-neutral-900">Fast Delivery</h4>
+                <p className="text-sm text-neutral-600">Get it delivered within 24 hours</p>
               </div>
             </div>
-          </div>
-
-          {/* Quantity Selector */}
-          {isCustomer && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quantity
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center border border-gray-300 rounded-lg">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-2 text-gray-600 hover:text-gray-800"
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-2 border-x border-gray-300 font-medium">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(Math.min(product.quantity, quantity + 1))}
-                    className="px-3 py-2 text-gray-600 hover:text-gray-800"
-                  >
-                    +
-                  </button>
-                </div>
-                <span className="text-sm text-gray-600">
-                  {product.unit} available
-                </span>
+            <div className="flex items-start gap-3 p-4 bg-neutral-50 rounded-xl">
+              <Shield className="h-6 w-6 text-primary-600 mt-1" />
+              <div>
+                <h4 className="font-semibold text-neutral-900">Quality Guarantee</h4>
+                <p className="text-sm text-neutral-600">100% satisfaction guaranteed</p>
               </div>
             </div>
-          )}
-
-          {/* Action Buttons */}
-          {isCustomer && (
-            <div className="flex space-x-4">
-              <button
-                onClick={addToCart}
-                className="flex-1 btn-secondary py-3 text-lg flex items-center justify-center"
-              >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart
-              </button>
-              <button
-                onClick={buyNow}
-                className="flex-1 btn-primary py-3 text-lg"
-              >
-                Buy Now
-              </button>
-            </div>
-          )}
-
-          {/* Product Details */}
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Details</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Category</span>
-                <span className="font-medium text-gray-900 capitalize">{product.category}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Unit</span>
-                <span className="font-medium text-gray-900">{product.unit}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Location</span>
-                <span className="font-medium text-gray-900">{product.city}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Listed On</span>
-                <span className="font-medium text-gray-900">
-                  {new Date(product.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Delivery Info */}
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Delivery Information</h4>
-            <p className="text-sm text-blue-700">
-              • Free delivery for orders above ₹500<br/>
-              • Standard delivery: 2-3 business days<br/>
-              • Fresh produce guaranteed
-            </p>
           </div>
         </div>
       </div>
@@ -258,4 +182,4 @@ const ProductDetail = () => {
   );
 };
 
-export default ProductDetail; 
+export default ProductDetail;

@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, adminOnly = false, farmerOnly = false, customerOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, farmerOnly = false, customerOnly = false, publicOnly = false }) => {
   const { user, loading, isAuthenticated, isAdmin, isFarmer, isCustomer } = useAuth();
 
   if (loading) {
@@ -13,7 +13,14 @@ const ProtectedRoute = ({ children, adminOnly = false, farmerOnly = false, custo
     );
   }
 
-  if (!isAuthenticated) {
+  // Handle public-only routes (like Home/Login/Register when already logged in)
+  if (publicOnly && isAuthenticated) {
+    if (isAdmin) return <Navigate to="/admin" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // For protected routes, check authentication
+  if (!publicOnly && !isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
@@ -33,4 +40,4 @@ const ProtectedRoute = ({ children, adminOnly = false, farmerOnly = false, custo
   return children;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

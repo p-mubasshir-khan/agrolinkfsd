@@ -7,8 +7,7 @@ import { ArrowLeft, Upload, Image as ImageIcon, XCircle } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
-
-const API_URL = 'http://localhost:3001';
+import API_URL from '../api';
 
 const AddProduct = () => {
   const { user } = useAuth();
